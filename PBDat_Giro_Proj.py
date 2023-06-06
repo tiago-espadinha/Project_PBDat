@@ -7,6 +7,7 @@ from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+import math
 
 
 def print_skel(i,skel_data,frame,width,height): #prints skel onto video, prob_val is calculated experimentaly
@@ -71,7 +72,7 @@ def fill_missing(skel_data):
     #   skel_data->data matrix
     #Outputs:
     #   missing_index->index of missing values from incomplete matrix 
-    #   n->nº of missing values
+    #   n->n of missing values
     n_row=skel_data[:,0].shape
     n_col=skel_data[0,:].shape
     missing_index=np.zeros((n_row[0],n_col[0]))
@@ -102,15 +103,15 @@ def fill_missing_alg(skel,OG_skel,r,alfa): #matrix completion algoritm
     #Outputs:
     #   skel->completed matrix
     #   missing_index->index of missing values from original incomplete matrix
-    #   it-> nº of iterations done to acomplish result
+    #   it-> nï¿½ of iterations done to acomplish result
 
     original_data=np.copy(skel)
     skel=np.delete(skel,[0,3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51,54],0) #we take off index and probabilities
     OG_skel=np.delete(OG_skel,[0,3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51,54],0) #we take off index and probabilities
     missing_index,n=fill_missing(skel) #get missing indexes and fill in with something (can be mean, or just some random number)
     alfa=alfa/n
-    err_dif=10000000000000000000000000;
-    last_error=1000;
+    err_dif=10000000000000000000000000
+    last_error=1000
     it=0
     old_skel=np.copy(skel)
     while err_dif>alfa and it<200 : # this will stop at either some iteration or when the SVD stabalizes
