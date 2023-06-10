@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy.io
+import scipy.stats as stats
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
@@ -29,11 +30,10 @@ def SVD_reduction(data_matrix, rank, print_plots):
     print('SVD1: ', data_redu.shape)
 
     # Plot the singular values
-    if print_plots:
-        plt.figure(2)
-        plt.plot(Sigma)
-        plt.title('Singular values')
-        plt.xlabel('Rank')
+    plt.figure(2)
+    plt.plot(Sigma)
+    plt.title('Singular values' + print_plots)
+    plt.xlabel('Rank')
     
     return data_redu
 
@@ -56,12 +56,11 @@ def PCA_reduction(data_matrix, rank, print_plots):
     data_redu = pca_rank.fit_transform(data_scaled)
     print('PCA: ', data_redu.shape)
 
-    if print_plots:
-        # Plot the explained variance
-        plt.figure(3)
-        plt.plot(np.cumsum(pca_rank.explained_variance_ratio_))
-        plt.title('Explained variance')
-        plt.xlabel('Rank')
+    # Plot the explained variance
+    plt.figure()
+    plt.plot(np.cumsum(pca_rank.explained_variance_ratio_))
+    plt.title('Explained variance - ' + print_plots)
+    plt.xlabel('Rank')
 
     return data_redu
 
@@ -83,52 +82,65 @@ def kmeans_clustering(data_matrix, n_cluster, print_plots):
     labels = kmeans.labels_
     centroids = kmeans.cluster_centers_
 
-    if print_plots:
     # Plot the clusters 2D
-        plt.figure(4)
-        for i in range(n_cluster):
-            plt.scatter(data_matrix[labels == i][:,0], data_matrix[labels == i][:,1], s=25, label='Label ' + str(i))
-        plt.scatter(centroids[:,0], centroids[:,1], s=100, c='black', marker='x', label='Centroids')
-        plt.legend()
-        plt.title('Kmeans Clusters 2D')
+    plt.figure()
+    for i in range(n_cluster):
+        plt.scatter(data_matrix[labels == i][:,0], data_matrix[labels == i][:,1], s=25, label='Label ' + str(i))
+    plt.scatter(centroids[:,0], centroids[:,1], s=100, c='black', marker='x', label='Centroids')
+    plt.legend()
+    plt.title('Kmeans Clusters 2D - ' + print_plots)
 
-        # Plot the clusters 3D
-        ax = plt.figure(5).add_subplot(projection='3d')
-        for i in range(n_cluster):
-            ax.scatter(data_matrix[labels == i][:,0], data_matrix[labels == i][:,1], data_matrix[labels == i][:,2], s=25, label='Label ' + str(i))
-        ax.scatter(centroids[:,0], centroids[:,1], centroids[:,2], s=100, c='black', marker='x', label='Centroids')
-        plt.legend()
-        plt.title('Kmeans Clusters 3D')
+    # Plot the clusters 3D
+    ax = plt.figure().add_subplot(projection='3d')
+    for i in range(n_cluster):
+        ax.scatter(data_matrix[labels == i][:,0], data_matrix[labels == i][:,1], data_matrix[labels == i][:,2], s=25, label='Label ' + str(i))
+    ax.scatter(centroids[:,0], centroids[:,1], centroids[:,2], s=100, c='black', marker='x', label='Centroids')
+    plt.legend()
+    plt.title('Kmeans Clusters 3D - ' + print_plots)
 
     return labels, centroids
 
 
-def outlier_detection(data_matrix, data2, rank, print_plots):
+# Description:
+#   This function performs an outlier detection on the data matrix
+# Inputs:
+#   data_matrix -> data matrix to find outliers
+#   print_plots -> show plot of the outliers
+# Outputs:
+#   inliers -> inliers of the data matrix
+#   outliers -> outliers of the data matrix
+def outlier_detection(data_matrix, print_plots):
+    
+    # Z-score method
+    z_score = stats.zscore(data_matrix, axis=0)
+    dist = np.linalg.norm(z_score-data_matrix.mean(axis=0), axis=1)
 
-    prod = np.multiply(data_matrix, data2).sum(axis=1)
-    error = np.divide(prod, np.multiply(np.linalg.norm(data_matrix, axis=1), np.linalg.norm(data2, axis=1)))
-    Q1 = np.quantile(error, 0.25)
-    Q3 = np.quantile(error, 0.75)
-    IQR = Q3 - Q1
-    print(IQR)
+    # Quantile of the distances
+    q1 = np.quantile(dist, 0.25)
+    q3 = np.quantile(dist, 0.75)
+    iqr = q3 - q1
 
-    out_data = np.where((error < (Q1 - 1.5 * IQR)) | (error > (Q3 + 1.5 * IQR)))
-    in_data = np.where((error >= (Q1 - 1.5 * IQR)) & (error <= (Q3 + 1.5 * IQR)))
-    out = out_data[0]
-    new_data = np.delete(data_matrix, out, axis=0)
-    new_data2 = np.delete(data_matrix, in_data[0], axis=0)
-    if print_plots:
-        plt.figure(6)
-        plt.scatter(new_data[:,0], new_data[:,1], s=100, c='black', marker='x', label='OUT')
-        plt.scatter(new_data2[:,0], new_data2[:,1], s=100, c='red', marker='o', label='IN')
-        plt.legend()
-        plt.title('Boxplot')
+    # Detect outliers
+    outlier_idx = np.where(dist > q3 + 1.5*iqr)[0]
+    inlier_idx = np.where(dist <= q3 + 1.5*iqr)[0]
 
-        ax = plt.figure(7).add_subplot(projection='3d')
-        ax.scatter(new_data[:,0], new_data[:,1], new_data[:,2], s=100, c='blue', marker='o', label='in')
-        ax.scatter(new_data2[:,0], new_data2[:,1], new_data2[:,2], s=100, c='black', marker='x', label='out')
+    # Remove outliers from data matrix
+    inliers = np.delete(data_matrix, outlier_idx, axis=0)
+    outliers = np.delete(data_matrix, inlier_idx, axis=0)
 
-    return out_data, in_data
+    plt.figure()
+    plt.scatter(inliers[:,0], inliers[:,1], s=25, c='green', marker='o', label='Inliers')
+    plt.scatter(outliers[:,0], outliers[:,1], s=40, c='red', marker='o', label='Outliers')
+    plt.legend()
+    plt.title('Outlier Detection - ' + print_plots)
+
+    ax = plt.figure().add_subplot(projection='3d')
+    ax.scatter(inliers[:,0], inliers[:,1], inliers[:,2], s=25, c='green', marker='o', label='Inliers')
+    ax.scatter(outliers[:,0], outliers[:,1], outliers[:,2], s=40, c='red', marker='o', label='Outliers')
+    plt.legend()
+    plt.title('Outlier Detection 3D - ' + print_plots)
+
+    return inliers, outliers
 
 
 # Description:
@@ -226,80 +238,70 @@ def fill_missing(skel_data):
 #   skel -> completed matrix
 #   missing_index -> index of missing values from original incomplete matrix
 #   it -> number of iterations done to acomplish result
-def fill_missing_alg(skel_incomp, skel_comp, rank, alfa): #matrix completion algoritm
-
-    original_data=np.copy(skel_incomp)
-    skel_incomp=np.delete(skel_incomp, list(range(0, skel_incomp.shape[0], 3)), 0)
-    skel_comp=np.delete(skel_comp, list(range(0, skel_incomp.shape[0], 3)), 0)
-    
-    missing_index, n = fill_missing(skel_incomp) #get missing indexes and fill in with something (can be mean, or just some random number)
-    
+def fill_missing_alg(skel,OG_skel,r,alfa):
+    original_data=np.copy(skel)
+    skel=np.delete(skel,[0,3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51,54],0) #we take off index and probabilities
+    OG_skel=np.delete(OG_skel,[0,3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51,54],0) #we take off index and probabilities
+    missing_index,n=fill_missing(skel) #get missing indexes and fill in with something (can be mean, or just some random number)
     alfa=alfa/n
     err_dif=math.inf
     last_error=1000
-    iter=0 #no of iterations
-    old_skel=np.copy(skel_incomp)
-    while err_dif>alfa and iter<200 : # this will stop at either some iteration or when the SVD stabalizes
-        
-        #norm_val=np.amax(skel_incomp, axis=1)
-        #out = skel_incomp / norm_val[:, None]
-        #out2 = out-np.mean(skel_incomp, axis=1)[:, None]
-        #print(out2)
-        norm_val_x=np.zeros(skel_incomp[0,:].shape[0]) 
-        norm_val_y=np.zeros(skel_incomp[0,:].shape[0])
-        sub_val_x=np.zeros(skel_incomp[0,:].shape[0]) 
-        sub_val_y=np.zeros(skel_incomp[0,:].shape[0])
-        for i in range(skel_incomp[0,:].shape[0]): #get maximum value
-            for j in range(skel_incomp[:,0].shape[0]):
+    it=0
+    old_skel=np.copy(skel)
+    while err_dif>alfa and it<200 : # this will stop at either some iteration or when the SVD stabalizes
+        norm_val_x=np.zeros(skel[0,:].shape[0])
+        norm_val_y=np.zeros(skel[0,:].shape[0])
+        sub_val_x=np.zeros(skel[0,:].shape[0])
+        sub_val_y=np.zeros(skel[0,:].shape[0])
+        for i in range(skel[0,:].shape[0]): #get maximum value
+            for j in range(skel[:,0].shape[0]):
                 if j%2==0:
-                    if skel_incomp[j,i]>norm_val_x[i]:
-                        norm_val_x[i]=np.copy(skel_incomp[j,i])
+                    if skel[j,i]>norm_val_x[i]:
+                        norm_val_x[i]=np.copy(skel[j,i])
                 else:
-                    if skel_incomp[j,i]>norm_val_y[i]:
-                        norm_val_y[i]=np.copy(skel_incomp[j,i])
+                    if skel[j,i]>norm_val_y[i]:
+                        norm_val_y[i]=np.copy(skel[j,i])
         #normalize and centralize data
 
-        for i in range(skel_incomp[0,:].shape[0]):
-            for j in range(skel_incomp[:,0].shape[0]):
+        for i in range(skel[0,:].shape[0]):
+            for j in range(skel[:,0].shape[0]):
                 if j%2==0:
-                    skel_incomp[j,i]=skel_incomp[j,i]/norm_val_x[i]
+                    skel[j,i]=skel[j,i]/norm_val_x[i]
                     if j==0:
-                        sub_val_x[i]=skel_incomp[j,i]
-                    skel_incomp[j,i]=skel_incomp[j,i]-sub_val_x[i]
+                        sub_val_x[i]=skel[j,i]
+                    skel[j,i]=skel[j,i]-sub_val_x[i]
                 else:
-                    skel_incomp[j,i]=skel_incomp[j,i]/norm_val_y[i]
+                    skel[j,i]=skel[j,i]/norm_val_y[i]
                     if j==1:
-                        sub_val_y[i]=skel_incomp[j,i]
-                    skel_incomp[j,i]=skel_incomp[j,i]-sub_val_y[i]
+                        sub_val_y[i]=skel[j,i]
+                    skel[j,i]=skel[j,i]-sub_val_y[i]
         #get prediction
-        #print(skel_incomp)
 
-
-        u, s, v = np.linalg.svd(skel_incomp, full_matrices=False) #SVD
+        u, s, v = np.linalg.svd(skel, full_matrices=False) #SVD
         s=np.diag(s)
-        skel_pred =  u[:, :rank] @ s[0:rank, 0:rank] @ v[0:rank, :] #reconstruct
-        for i in range(skel_incomp[0,:].shape[0]):
-            for j in range(skel_incomp[:,0].shape[0]):
+        skel_pred =  u[:, :r] @ s[0:r, 0:r] @ v[0:r, :] #reconstruct
+        for i in range(skel[0,:].shape[0]):
+            for j in range(skel[:,0].shape[0]):
                 if missing_index[j,i]==1:
-                    skel_incomp[j,i]=np.copy(skel_pred[j,i]) 
+                    skel[j,i]=np.copy(skel_pred[j,i]) 
         #return to its place in the video
 
-        for i in range(skel_incomp[0,:].shape[0]):
-            for j in range(skel_incomp[:,0].shape[0]):
+        for i in range(skel[0,:].shape[0]):
+            for j in range(skel[:,0].shape[0]):
                 if j%2==0:
-                    skel_incomp[j,i]=skel_incomp[j,i]+sub_val_x[i]
-                    skel_incomp[j,i]=skel_incomp[j,i]*norm_val_x[i]
+                    skel[j,i]=skel[j,i]+sub_val_x[i]
+                    skel[j,i]=skel[j,i]*norm_val_x[i]
                 else:
-                    skel_incomp[j,i]=skel_incomp[j,i]+sub_val_y[i]
-                    skel_incomp[j,i]=skel_incomp[j,i]*norm_val_y[i] 
+                    skel[j,i]=skel[j,i]+sub_val_y[i]
+                    skel[j,i]=skel[j,i]*norm_val_y[i] 
         #calculate error between iterations, this isint to show that its getting "better", but to show that its converging
 
         err=0
         n_err=0
-        for i in range(skel_incomp[0,:].shape[0]): #get error, which is the distance of each predicted point to its previous predictions
-            for j in range(skel_incomp[:,0].shape[0]):
+        for i in range(skel[0,:].shape[0]): #get error, which is the distance of each predicted point to its previous predictions
+            for j in range(skel[:,0].shape[0]):
                 if missing_index[j,i]==1 and j%2==0:
-                    aux=float((old_skel[j,i]-skel_incomp[j,i])*(old_skel[j+1,i]-skel_incomp[j+1,i]))
+                    aux=float((old_skel[j,i]-skel[j,i])*(old_skel[j+1,i]-skel[j+1,i]))
                     err+=math.sqrt(aux*aux)
                     n_err+=1
         final_error=err/n_err #we will use the normalized error because its easier to analize
@@ -307,28 +309,27 @@ def fill_missing_alg(skel_incomp, skel_comp, rank, alfa): #matrix completion alg
         if err_dif<0: #neglect negative errors
             err_dif=100000000000000000
         last_error=final_error
-        old_skel=np.copy(skel_incomp)
-        iter+=1
-        print("Did iteration: ",iter)
+        old_skel=np.copy(skel)
+        it+=1
+        print("Did iteration: ",it)
         print("error: ",final_error)   
     #since we have the complete skelectons, we can also have an "absolute" error
 
     err=0
     n_err=0
-    for i in range(skel_incomp[0,:].shape[0]): #get error, no real meaning, only for comparations sake
-        for j in range(skel_incomp[:,0].shape[0]):
+    for i in range(skel[0,:].shape[0]): #get error, no real meaning, only for comparations sake
+        for j in range(skel[:,0].shape[0]):
             if missing_index[j,i]==1 and j%2==0:
-                aux=float((skel_comp[j,i]-skel_incomp[j,i])*(skel_comp[j+1,i]-skel_incomp[j+1,i]))
+                aux=float((OG_skel[j,i]-skel[j,i])*(OG_skel[j+1,i]-skel[j+1,i]))
                 err+=math.sqrt(aux*aux)
                 n_err+=1
     final_error=err/n_err
     print("Error relative to the complete skelectons: ",final_error)
     for i in range(18): #return to its normal shape
-        original_data[(i*3)+1,:]=np.copy(skel_incomp[(i*2),:])
-        original_data[(i*3)+2,:]=np.copy(skel_incomp[(i*2)+1,:])
-    skel_ret=np.copy(original_data)
-    return skel_ret,missing_index,iter
-
+        original_data[(i*3)+1,:]=np.copy(skel[(i*2),:])
+        original_data[(i*3)+2,:]=np.copy(skel[(i*2)+1,:])
+    skel=np.copy(original_data)
+    return skel,missing_index,it
 
 # Print flags
 print_plots = True
@@ -365,8 +366,9 @@ features = features['features']
 if subset:
     features = features[:, frame_start:frame_start + frame_count] # select a subset of 100 frames
     features = features.T
-    #skel = skel[:, frame_start:frame_start + frame_count]
-    #skel_comp = skel_comp[:, frame_start:frame_start + frame_count]
+
+    skel[:, (skel[0, :] >= frame_start) & (skel[0, :] < frame_start + frame_count)]
+    skel_comp[:, (skel_comp[0, :] >= frame_start) & (skel_comp[0, :] < frame_start + frame_count)]
 
 #######################
 #  SKELETON ANALYSIS  #
@@ -375,6 +377,13 @@ if subset:
 #Fill missing data
 #skel_new,missing_index,it=fill_missing_alg(skel,skel_comp,4,0.001) 
 #print("This took ",it," iterations")
+
+skel_redu = PCA_reduction(skel_comp, 15, 'Skeletons')
+
+# Clustering of the features
+labels, centroid = kmeans_clustering(skel_redu, 4, 'Skeletons')
+inliers, outliers = outlier_detection(skel_redu, 'Skeletons')
+
 
 #######################
 #  FEATURES ANALYSIS  #
@@ -400,12 +409,12 @@ plt.title('Sum of the variance')
 plt.xlabel('Rank')
 
 # Dimensionality reduction of the features
-SVD_reduction(features, rank, print_plots)
-features_redu = PCA_reduction(features, rank, print_plots)
+#features_redu = SVD_reduction(features, rank, 'Features')
+features_redu = PCA_reduction(features, rank, 'Features')
 
 # Clustering of the features
-labels, centroid = kmeans_clustering(features_redu, 4, print_plots)
-out_data, in_data = outlier_detection(features_redu, features, rank, print_plots)
+labels, centroid = kmeans_clustering(features_redu, 4, 'Features')
+inliers, outliers = outlier_detection(features_redu, 'Features')
 vid_skel_ind=skel[0,:]
 #vid_skel_new=skel_new[0,:]
 
