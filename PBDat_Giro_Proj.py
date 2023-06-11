@@ -3,14 +3,148 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy.io
+import scipy.stats as stats
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 import math
+import os
 
 
-def print_skel(i,skel_data,frame,width,height): #prints skel onto video, prob_val is calculated experimentaly
+# Description:
+#   This function performs a Singular Value Decomposition (SVD) on the data matrix and reduces its dimensionality
+# Inputs:
+#   data_matrix -> original data matrix
+#   rank -> rank of the reduced matrix
+#   print_plots -> show plot of singular values
+# Outputs:
+#   data_redu -> reduced data matrix
+def SVD_reduction(data_matrix, rank, print_plots):
+
+    # SVD
+    U, Sigma, Vh = np.linalg.svd(data_matrix, full_matrices=False)
+    
+    # Dimensionality reduction
+    data_redu = (U[:, :rank] @ np.diag(Sigma)[:rank, :rank])
+    
+    return data_redu
+
+
+# Description:
+#   This function performs a Principal Component Analysis (PCA) on the data matrix and reduces its dimensionality
+# Inputs:
+#   data_matrix -> original data matrix
+#   rank -> rank of the reduced matrix
+#   print_plots -> show plot of explained variance
+# Outputs:
+#   data_redu -> reduced data matrix
+def PCA_reduction(data_matrix, rank, print_plots):
+    
+    # Center data
+    scaler = StandardScaler()
+    data_scaled=scaler.fit_transform(data_matrix)
+
+    # PCA
+    pca_rank = PCA(n_components = rank)
+    data_redu = pca_rank.fit_transform(data_scaled)
+
+    return data_redu
+
+
+# Description:
+#   This function performs a Kmeans clustering on the data matrix
+# Inputs:
+#   data_matrix -> data matrix to cluster
+#   n_cluster -> number of clusters to find
+#   print_plots -> show plot of the clusters
+# Outputs:
+#   labels -> labels of the clusters
+#   centroids -> centroids of the clusters
+def kmeans_clustering(data_matrix, n_cluster, print_plots):
+    
+    #Kmeans
+    kmeans = KMeans(n_clusters=n_cluster, n_init=10, random_state=10)
+    kmeans.fit(data_matrix)
+    labels = kmeans.labels_
+    centroids = kmeans.cluster_centers_
+
+    '''
+    # Plot the clusters 2D
+    plt.figure()
+    for i in range(n_cluster):
+        plt.scatter(data_matrix[labels == i][:,0], data_matrix[labels == i][:,1], s=25, label='Label ' + str(i))
+    plt.scatter(centroids[:,0], centroids[:,1], s=100, c='black', marker='x', label='Centroids')
+    plt.legend()
+    plt.title('Kmeans Clusters 2D - ' + print_plots)
+    '''
+
+    # Plot the clusters 3D
+    ax = plt.figure().add_subplot(projection='3d')
+    for i in range(n_cluster):
+        ax.scatter(data_matrix[labels == i][:,0], data_matrix[labels == i][:,1], data_matrix[labels == i][:,2], s=25, label='Label ' + str(i))
+    ax.scatter(centroids[:,0], centroids[:,1], centroids[:,2], s=100, c='black', marker='x', label='Centroids')
+    plt.legend()
+    plt.title('Kmeans Clusters 3D - ' + print_plots)
+
+    return labels, centroids
+
+
+# Description:
+#   This function performs an outlier detection on the data matrix
+# Inputs:
+#   data_matrix -> data matrix to find outliers
+#   print_plots -> show plot of the outliers
+# Outputs:
+#   inliers -> inliers of the data matrix
+#   outliers -> outliers of the data matrix
+def outlier_detection(data_matrix, print_plots):
+    
+    # Z-score method
+    z_score = stats.zscore(data_matrix, axis=0)
+    dist = np.linalg.norm(z_score-data_matrix.mean(axis=0), axis=1)
+
+    # Quantile of the distances
+    q1 = np.quantile(dist, 0.25)
+    q3 = np.quantile(dist, 0.75)
+    iqr = q3 - q1
+
+    # Detect outliers
+    outlier_idx = np.where(dist > q3 + 1.5*iqr)[0]
+    inlier_idx = np.where(dist <= q3 + 1.5*iqr)[0]
+
+    # Remove outliers from data matrix
+    inliers = np.delete(data_matrix, outlier_idx, axis=0)
+    outliers = np.delete(data_matrix, inlier_idx, axis=0)
+
+    '''
+    # Plot the outliers 2D
+    plt.figure()
+    plt.scatter(inliers[:,0], inliers[:,1], s=25, c='green', marker='o', label='Inliers')
+    plt.scatter(outliers[:,0], outliers[:,1], s=40, c='red', marker='o', label='Outliers')
+    plt.legend()
+    plt.title('Outlier Detection - ' + print_plots)
+    '''
+
+    # Plot the outliers 3D
+    ax = plt.figure().add_subplot(projection='3d')
+    ax.scatter(inliers[:,0], inliers[:,1], inliers[:,2], s=25, c='green', marker='o', label='Inliers')
+    ax.scatter(outliers[:,0], outliers[:,1], outliers[:,2], s=40, c='red', marker='o', label='Outliers')
+    plt.legend()
+    plt.title('Outlier Detection 3D - ' + print_plots)
+
+    return inliers, inlier_idx, outliers, outlier_idx
+
+
+# Description:
+#   This function draws the skeleton on the frame image, linking their joints in case of high probability
+# Inputs:
+#   i -> frame number
+#   skel_data -> skeleton coordinates and probabilities
+#   frame -> frame image
+#   width -> width of the frame
+#   height -> height of the frame
+def print_skel(i,skel_data,frame,width,height):
     val=4
     prob_val=0.20
     #0-1
@@ -65,14 +199,15 @@ def print_skel(i,skel_data,frame,width,height): #prints skel onto video, prob_va
     if skel_data[54,i]>prob_val and skel_data[48,i]>prob_val:
         cv2.line(img=frame, pt1=(int(skel_data[46,i]*width),int(skel_data[47,i]*height)), pt2=(int(skel_data[52,i]*width),int(skel_data[53,i]*height)), color=(255, 0, 0), thickness=val , lineType=8, shift=0)
 
+
+# Description:
+#   This function fills the missing values of the data matrix with the mean
+# Inputs:
+#   skel_data -> incomplete skeleton matrix
+# Outputs:
+#   mask_miss -> mask of missing values
+#   n_missing -> number of missing values
 def fill_missing(skel_data):
-    #Desc:
-    #   fill missing values with the mean
-    #Inputs:
-    #   skel_data->data matrix
-    #Outputs:
-    #   missing_index->index of missing values from incomplete matrix 
-    #   n->n of missing values
     n_row=skel_data[:,0].shape
     n_col=skel_data[0,:].shape
     missing_index=np.zeros((n_row[0],n_col[0]))
@@ -92,19 +227,20 @@ def fill_missing(skel_data):
                     skel_data[i,j]=0
     return missing_index,n
 
-def fill_missing_alg(skel,OG_skel,r,alfa): #matrix completion algoritm
-    #Desc:
-    #   This will use SVD to complete a matrix with missing values. To do this it will also center and normalize the datamatrix
-    #Inputs:
-    #   skel->matrix to be completed
-    #   OG_skel->matrix thats already completed for comparation
-    #   r-> rank of matrix, can be higher or equal, the closest the better
-    #   alfa-> error for which we consider that it has already converged to a satisfactory solution
-    #Outputs:
-    #   skel->completed matrix
-    #   missing_index->index of missing values from original incomplete matrix
-    #   it-> n� of iterations done to acomplish result
 
+# Description:
+#   This function performs a completion of the skeletons matrix using SVD
+#   It also centers and normalizes the matrix
+# Inputs:
+#   skel_incomp -> incomplete skeletons matrix
+#   skel_comp -> complete skeletons matrix
+#   rank -> rank of matrix, can be higher or equal, the closest the better
+#   alfa -> error for which we consider that it has already converged to a satisfactory solution
+# Outputs:
+#   skel -> completed matrix
+#   missing_index -> index of missing values from original incomplete matrix
+#   it -> number of iterations done to acomplish result
+def fill_missing_alg(skel,OG_skel,r,alfa): #matrix completion algoritm
     original_data=np.copy(skel)
     skel=np.delete(skel,[0,3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51,54],0) #we take off index and probabilities
     OG_skel=np.delete(OG_skel,[0,3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51,54],0) #we take off index and probabilities
@@ -198,155 +334,165 @@ def fill_missing_alg(skel,OG_skel,r,alfa): #matrix completion algoritm
     return skel,missing_index,it
 
 
+# Description:
+#   This function merges the features and skeleton matrices
+#   The skeleton selected for each frame is the one with the highest probability
+# Inputs:
+#   data -> features matrix
+#   skel -> skeleton matrix
+# Outputs:
+#   joint_matrix -> joint matrix
+def joint_matrix_gen(data,skel):
+    vid_skel_ind = skel[0,:]
+    joint_matrix = np.zeros((data.shape[0]+36, data.shape[1]))
+
+    # find the skeleton with the highest probability for each frame
+    for i in range(data.shape[1]):
+        skel_frame = np.where(vid_skel_ind == i-1)
+        prob_max = 0
+        prob_choise = 0
+        for j in skel_frame[0]:
+            prob = 0
+            for k in range(19):
+                if k>0:
+                    prob += skel[k*3, j]
+            if prob > prob_max:
+                prob_max = prob
+                prob_choise = j
+        joint_matrix[0:data.shape[0],i] = data[:,i]
+        skel_choise = np.copy(skel[:,prob_choise])
+        skel_choise = np.delete(skel_choise,[0,3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51,54],0) #we take off index and probabilities
+        joint_matrix[data.shape[0]:,i] = skel_choise
+
+    return joint_matrix
+
+
 # Print flags
-print_plots = True
-print_frames = True
-print_data = False
-manual_kmeans = False
+print_plots = True # Print plots of the data
+print_frames = False # Print frames of the video
+save_flag = False # Save the frames in directory (needs print_frames = True)
+skel_flag = True  # Print the skeleton on the frame (needs print_frames = True)
+subset_flag = True # Select a subset of frames
 
 # Frames to select
-frame_start = 5000
-frame_count = 1000
+frame_start = 1000
+frame_count = 300
+# Cumulative variance to select
 var = 0.85
-
+# Number of clusters to separate the data
+num_clusters = 6
+# Path to save frame images
+path = 'C:/Users/Tiago/Desktop/Project_PBDat/frames'
 
 # Loading video
 vid = cv2.VideoCapture('data/girosmallveryslow2.mp4')
 n_frames = int(vid.get(cv2.CAP_PROP_FRAME_COUNT))
 
-#skelecton init
+# Loading skeletons incomplete
 skel=scipy.io.loadmat('data/girosmallveryslow2_openpose.mat')
 skel=skel['skeldata']
+
+# Loading skeletons completed
 skel_comp=scipy.io.loadmat('data/girosmallveryslow2_openpose_complete.mat')
 skel_comp=skel_comp['skeldata']
 
 # Loading embeddings
-data = scipy.io.loadmat('data/girosmallveryslow2.mp4_features.mat')
-data = data['features'] 
+features = scipy.io.loadmat('data/girosmallveryslow2.mp4_features.mat')
+features = features['features'] 
 
 # Select a subset of frames
-subset = data[:, frame_start:frame_start + frame_count] # select a subset of 100 frames
-subset = subset.T
+if subset_flag:
+    features = features[:, frame_start:frame_start + frame_count]
+
+    skel[:, (skel[0, :] >= frame_start) & (skel[0, :] < frame_start + frame_count)]
+    skel_comp[:, (skel_comp[0, :] >= frame_start) & (skel_comp[0, :] < frame_start + frame_count)]
+
+# Keep features along the columns
+features = features.T
+
+#######################
+#  SKELETON ANALYSIS  #
+#######################
 
 #Fill missing data
-
-skel,missing_index,it=fill_missing_alg(skel,skel_comp,4,0.001) 
+skel_new,missing_index,it=fill_missing_alg(skel,skel_comp,4,0.001) 
 print("This took ",it," iterations")
 
-# PCA Manual
+skel_redu = PCA_reduction(skel_new, 10, 'Skeletons')
 
-# Center data
-mu = subset.mean(axis=0)
-subset_zc = subset - mu
+# Clustering of the features
+labels, centroid = kmeans_clustering(skel_redu, num_clusters, 'Skeletons')
+skel_inliers, skel_in_idx, skel_outliers, skel_out_idx = outlier_detection(skel_redu, 'Skeletons')
+print('Number of Skeletons Outliers:', skel_out_idx.shape[0])
+
+#######################
+#  FEATURES ANALYSIS  #
+#######################
 
 # SVD
-U, S, Vt = np.linalg.svd(subset_zc, full_matrices=False)
+U, S, Vt = np.linalg.svd(features, full_matrices=False)
 Variance = S**2 / np.sum(S**2)
 Variance_sum = np.cumsum(Variance) / np.sum(Variance)
-if print_data:
-    print(Variance)
-    print(U.shape, S.shape, Vt.shape)
-    print('S:', S)
-    print(np.linalg.norm(subset_zc - (U * S) @ Vt))
-    print('Variance_sum:', Variance_sum)
 
 # Find rank of total variance > N%
 for i in range(len(Variance_sum)):
     if Variance_sum[i] > var:
-        rank = i
-        print('rank ( >', var, '):', rank)
+        rank = i+1
+        print('Features rank ( >', var, '):', rank)
         break
 
-subset_zcr = (U[:,:rank] * S[:rank]) @ Vt[:rank,:]
-print((np.linalg.norm(subset_zc - subset_zcr), np.linalg.norm(subset_zc)))
-subset_r = subset_zcr + mu
-
-# Plot the singular values
-plt.figure(1)
-plt.plot(S)
-plt.title('Singular values')
-plt.xlabel('Rank')
-
 # Plot the sum of the variance
-plt.figure(2)
+plt.figure()
 plt.plot(Variance_sum)
 plt.title('Sum of the variance')
 plt.xlabel('Rank')
 
+# Dimensionality reduction of the features
+features_redu = PCA_reduction(features, rank, 'Features')
 
-# PCA Sklearn
+# Clustering of the features
+labels, centroid = kmeans_clustering(features_redu, num_clusters, 'Features')
+feat_inliers, feat_in_idx, feat_outliers, feat_out_idx = outlier_detection(features_redu, 'Features')
+print('Number of Features Outliers:', feat_out_idx.shape[0])
 
-# Center data
-scaler = StandardScaler()
-scaler.fit(subset)
-subset_scaled = scaler.transform(subset)
+#######################
+#  ALL DATA ANALYSIS  #
+#######################
 
-# PCA
-pca_rank = PCA(n_components = rank)
-pca_rank.fit(subset_scaled)
-subset_pca = pca_rank.transform(subset_scaled)
+# Merging the features and skeleton matrices
+merged_matrix = joint_matrix_gen(features_redu,skel_redu)
 
-# Plot the explained variance ratio
-'''
-plt.figure(3)
-plt.plot(np.cumsum(pca_rank.explained_variance_ratio_))
-plt.title('Explained variance ratio')
-'''
+# Dimensionality reduction of the merged matrix
+#merged_redu = PCA_reduction(merged_matrix, rank, 'Features + Skeletons')
 
-
-#Kmeans
-
-kmeans = KMeans(n_clusters=4, n_init=10)
-if manual_kmeans:
-    kmeans.fit(subset_r)
-else:
-    kmeans.fit(subset_pca)
-labels = kmeans.labels_
-centroids = kmeans.cluster_centers_
-
-if manual_kmeans:
-    cluster1 = subset_r[labels == 0]
-    cluster2 = subset_r[labels == 1]
-    cluster3 = subset_r[labels == 2]
-    cluster4 = subset_r[labels == 3]
-else:
-    cluster1 = subset_pca[labels == 0]
-    cluster2 = subset_pca[labels == 1]
-    cluster3 = subset_pca[labels == 2]
-    cluster4 = subset_pca[labels == 3]
-
-# Plot the clusters
-plt.figure(4)
-plt.scatter(cluster1[:,0], cluster1[:,1], s=25, c='b')
-plt.scatter(cluster2[:,0], cluster2[:,1], s=25, c='g')
-plt.scatter(cluster3[:,0], cluster3[:,1], s=25, c='r')
-plt.scatter(cluster4[:,0], cluster4[:,1], s=25, c='y')
-plt.scatter(centroids[:,0], centroids[:,1], s=100, c='black', marker='x')
-plt.legend(['Label 0', 'Label 1', 'Label 2', 'Label 3', 'Centroids'])
-plt.title('Kmeans Clusters')
-
-ax = plt.figure(5).add_subplot(projection='3d')
-ax.scatter(cluster1[:,0], cluster1[:,1], cluster1[:,2], s=25, c='b')
-ax.scatter(cluster2[:,0], cluster2[:,1], cluster2[:,2], s=25, c='g')
-ax.scatter(cluster3[:,0], cluster3[:,1], cluster3[:,2], s=25, c='r')
-ax.scatter(cluster4[:,0], cluster4[:,1], cluster4[:,2], s=25, c='y')
-ax.scatter(centroids[:,0], centroids[:,1], centroids[:,2], s=100, c='black', marker='x')
-
-plt.legend(['Label 0', 'Label 1', 'Label 2', 'Label 3', 'Centroids'])
-plt.title('Kmeans Clusters 3d')
+# Clustering of the merged matrix
+labels, centroid = kmeans_clustering(merged_matrix, num_clusters, 'Features + Skeletons')
+merged_inliers, merged_in_idx, merged_outliers, merged_out_idx = outlier_detection(merged_matrix, 'Features + Skeletons')
+print('Number of Merged Outliers:', merged_out_idx.shape[0])
 
 # Showing video
 if print_frames:
+    vid_skel_ind=skel[0,:]
+    #vid_skel_new=skel_new[0,:]
     for i in range(frame_count):
 
-        # Choose some frame
+        # Read the frame
         vid.set(cv2.CAP_PROP_POS_FRAMES, frame_start + i)
         res, frame = vid.read()
-
+        
+        # Print the skeleton on the frame
+        if skel_flag:
+            skel_frame=np.where(vid_skel_ind==i+frame_start-1)
+            #skel_new_frame=np.where(vid_skel_new==i+frame_start-1)
+            for j in skel_frame[0]:
+                print_skel(j ,skel,frame,frame.shape[1],frame.shape[0])
+            #for j in skel_new_frame[0]:
+            #    print_skel(j ,skel_new,frame,frame.shape[1],frame.shape[0])
+            
         # Set the text properties
         label_text = str(labels[i])
         frame_text = str(frame_start + i)
-        bottom_right_corner = (frame.shape[1] - 30, frame.shape[0] - 20)
+        bottom_right_corner = (frame.shape[1] - 100, frame.shape[0] - 20)
         bottom_left_corner = (30, frame.shape[0] - 20)
         font = cv2.FONT_HERSHEY_SIMPLEX
         font_scale = 1
@@ -354,11 +500,23 @@ if print_frames:
         line_thickness = 2
 
         # Add the frame and cluster number to the image
-        cv2.putText(frame, frame_text, bottom_left_corner, font, font_scale, font_color, line_thickness)
-        cv2.putText(frame, label_text, bottom_right_corner, font, font_scale, font_color, line_thickness)
-        cv2.imshow('Video Frames', frame)
-        if cv2.waitKey(0) == ord('q'):
-            break
+        cv2.putText(frame, frame_text, bottom_right_corner, font, font_scale, font_color, line_thickness)
+        if i in feat_out_idx:
+            cv2.putText(frame, 'Outlier', bottom_left_corner , font, font_scale, font_color, line_thickness)
+        else:
+            cv2.putText(frame, label_text, bottom_left_corner, font, font_scale, font_color, line_thickness)
+
+        # Save the frame image in the path directory
+        # The name of the image is the label of its cluster and its frame number
+        if save_flag:
+            if i in feat_out_idx:
+                cv2.imwrite(os.path.join(path, 'Outlier_frame' + str(frame_start + i) + '.png'), frame)
+            else:
+                cv2.imwrite(os.path.join(path, str(labels[i]) + '_frame' + str(frame_start + i) + '.png'), frame)
+        else:
+            cv2.imshow('Video Frames', frame)
+            if cv2.waitKey(0) == ord('q'):
+                break
 
     #stop functions
     vid.release()
