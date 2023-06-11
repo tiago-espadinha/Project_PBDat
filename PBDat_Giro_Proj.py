@@ -26,10 +26,10 @@ def SVD_reduction(data_matrix, rank, print_plots):
 
     # SVD
     U, Sigma, Vh = np.linalg.svd(data_matrix, full_matrices=False)
-    
+
     # Dimensionality reduction
     data_redu = (U[:, :rank] @ np.diag(Sigma)[:rank, :rank])
-    
+
     return data_redu
 
 
@@ -304,7 +304,7 @@ def fill_missing_alg(skel,OG_skel,r,alfa): #matrix completion algoritm
         for i in range(skel[0,:].shape[0]):
             for j in range(skel[:,0].shape[0]):
                 if missing_index[j,i]==1:
-                    skel[j,i]=np.copy(skel_pred[j,i]) 
+                    skel[j,i]=np.copy(skel_pred[j,i])
         #return to its place in the video
 
         for i in range(skel[0,:].shape[0]):
@@ -314,7 +314,7 @@ def fill_missing_alg(skel,OG_skel,r,alfa): #matrix completion algoritm
                     skel[j,i]=skel[j,i]*norm_val_x[i]
                 else:
                     skel[j,i]=skel[j,i]+sub_val_y[i]
-                    skel[j,i]=skel[j,i]*norm_val_y[i] 
+                    skel[j,i]=skel[j,i]*norm_val_y[i]
         #calculate error between iterations, this isint to show that its getting "better", but to show that its converging
 
         err=0
@@ -333,7 +333,7 @@ def fill_missing_alg(skel,OG_skel,r,alfa): #matrix completion algoritm
         old_skel=np.copy(skel)
         it+=1
         print("Did iteration: ",it)
-        print("error: ",final_error)   
+        print("error: ",final_error)
     #since we have the complete skelectons, we can also have an "absolute" error
 
     err=0
@@ -425,7 +425,7 @@ skel_comp=skel_comp['skeldata']
 
 # Loading embeddings (path_check)
 features = scipy.io.loadmat('data/girosmallveryslow2.mp4_features.mat')
-features = features['features'] 
+features = features['features']
 
 # Select a subset of frames
 if subset_flag:
@@ -445,9 +445,9 @@ features = features.T
 #######################
 
 #Fill missing data
-#skel_new,missing_index,it=fill_missing_alg(skel,skel_comp,4,0.001) 
-#print("This took ",it," iterations")
-skel_new=skel
+skel_new,missing_index,it=fill_missing_alg(skel,skel_comp,4,0.001)
+print("This took ",it," iterations")
+#skel_new=skel
 # Dimensionality reduction of the skeletons
 skel_redu = PCA_reduction(skel_new, 10, 'Skeletons')
 
@@ -517,7 +517,7 @@ if print_frames:
         # Read the frame
         vid.set(cv2.CAP_PROP_POS_FRAMES, frame_start + i)
         res, frame = vid.read()
-        
+
         # Print the skeleton on the frame
         if skel_flag:
             #skel_frame=np.where(vid_skel_ind==i+frame_start-1)
@@ -527,7 +527,7 @@ if print_frames:
             for j in skel_new_frame[0]:
                 print_skel(j ,skel_new,frame,frame.shape[1],frame.shape[0])
         # Set the text properties
-        
+
         label_text = str(labels[k])
         frame_text = str(frame_start + i)
         bottom_right_corner = (frame.shape[1] - 100, frame.shape[0] - 20)
