@@ -12,15 +12,17 @@ import math
 import os
 
 
-# Description:
-#   This function performs a Singular Value Decomposition (SVD) on the data matrix and reduces its dimensionality
-# Inputs:
-#   data_matrix -> original data matrix
-#   rank -> rank of the reduced matrix
-#   print_plots -> show plot of singular values
-# Outputs:
-#   data_redu -> reduced data matrix
 def SVD_reduction(data_matrix, rank, print_plots):
+    '''
+    Description:
+    This function performs a Singular Value Decomposition (SVD) on the data matrix and reduces its dimensionality
+    Inputs:
+    data_matrix -> original data matrix
+    rank -> rank of the reduced matrix
+    print_plots -> show plot of singular values
+    Outputs:
+    data_redu -> reduced data matrix
+    '''
 
     # SVD
     U, Sigma, Vh = np.linalg.svd(data_matrix, full_matrices=False)
@@ -31,16 +33,18 @@ def SVD_reduction(data_matrix, rank, print_plots):
     return data_redu
 
 
-# Description:
-#   This function performs a Principal Component Analysis (PCA) on the data matrix and reduces its dimensionality
-# Inputs:
-#   data_matrix -> original data matrix
-#   rank -> rank of the reduced matrix
-#   print_plots -> show plot of explained variance
-# Outputs:
-#   data_redu -> reduced data matrix
 def PCA_reduction(data_matrix, rank, print_plots):
-    
+    '''
+    Description:
+    This function performs a Principal Component Analysis (PCA) on the data matrix and reduces its dimensionality
+    Inputs:
+    data_matrix -> original data matrix
+    rank -> rank of the reduced matrix
+    print_plots -> show plot of explained variance
+    Outputs:
+    data_redu -> reduced data matrix
+    '''
+
     # Center data
     scaler = StandardScaler()
     data_scaled=scaler.fit_transform(data_matrix)
@@ -52,17 +56,19 @@ def PCA_reduction(data_matrix, rank, print_plots):
     return data_redu
 
 
-# Description:
-#   This function performs a Kmeans clustering on the data matrix
-# Inputs:
-#   data_matrix -> data matrix to cluster
-#   n_cluster -> number of clusters to find
-#   print_plots -> show plot of the clusters
-# Outputs:
-#   labels -> labels of the clusters
-#   centroids -> centroids of the clusters
 def kmeans_clustering(data_matrix, n_cluster, print_plots):
-    
+    '''
+    Description:
+    This function performs a Kmeans clustering on the data matrix
+    Inputs:
+    data_matrix -> data matrix to cluster
+    n_cluster -> number of clusters to find
+    print_plots -> show plot of the clusters
+    Outputs:
+    labels -> labels of the clusters
+    centroids -> centroids of the clusters
+    '''
+
     #Kmeans
     kmeans = KMeans(n_clusters=n_cluster, n_init=10, random_state=10)
     kmeans.fit(data_matrix)
@@ -90,16 +96,19 @@ def kmeans_clustering(data_matrix, n_cluster, print_plots):
     return labels, centroids
 
 
-# Description:
-#   This function performs an outlier detection on the data matrix
-# Inputs:
-#   data_matrix -> data matrix to find outliers
-#   print_plots -> show plot of the outliers
-# Outputs:
-#   inliers -> inliers of the data matrix
-#   outliers -> outliers of the data matrix
+
 def outlier_detection(data_matrix, print_plots):
-    
+    '''
+    Description:
+    This function performs an outlier detection on the data matrix
+    Inputs:
+    data_matrix -> data matrix to find outliers
+    print_plots -> show plot of the outliers
+    Outputs:
+    inliers -> inliers of the data matrix
+    outliers -> outliers of the data matrix
+    '''
+
     # Z-score method
     z_score = stats.zscore(data_matrix, axis=0)
     dist = np.linalg.norm(z_score-data_matrix.mean(axis=0), axis=1)
@@ -136,15 +145,18 @@ def outlier_detection(data_matrix, print_plots):
     return inliers, inlier_idx, outliers, outlier_idx
 
 
-# Description:
-#   This function draws the skeleton on the frame image, linking their joints in case of high probability
-# Inputs:
-#   i -> frame number
-#   skel_data -> skeleton coordinates and probabilities
-#   frame -> frame image
-#   width -> width of the frame
-#   height -> height of the frame
 def print_skel(i,skel_data,frame,width,height):
+    '''
+    Description:
+    This function draws the skeleton on the frame image, linking their joints in case of high probability
+    Inputs:
+    i -> frame number
+    skel_data -> skeleton coordinates and probabilities
+    frame -> frame image
+    width -> width of the frame
+    height -> height of the frame
+    '''
+
     val=4
     prob_val=0.20
     #0-1
@@ -200,14 +212,17 @@ def print_skel(i,skel_data,frame,width,height):
         cv2.line(img=frame, pt1=(int(skel_data[46,i]*width),int(skel_data[47,i]*height)), pt2=(int(skel_data[52,i]*width),int(skel_data[53,i]*height)), color=(255, 0, 0), thickness=val , lineType=8, shift=0)
 
 
-# Description:
-#   This function fills the missing values of the data matrix with the mean
-# Inputs:
-#   skel_data -> incomplete skeleton matrix
-# Outputs:
-#   mask_miss -> mask of missing values
-#   n_missing -> number of missing values
 def fill_missing(skel_data):
+    '''
+    Description:
+    This function fills the missing values of the data matrix with the mean
+    Inputs:
+    skel_data -> incomplete skeleton matrix
+    Outputs:
+    mask_miss -> mask of missing values
+    n_missing -> number of missing values
+    '''
+
     n_row=skel_data[:,0].shape
     n_col=skel_data[0,:].shape
     missing_index=np.zeros((n_row[0],n_col[0]))
@@ -228,19 +243,23 @@ def fill_missing(skel_data):
     return missing_index,n
 
 
-# Description:
-#   This function performs a completion of the skeletons matrix using SVD
-#   It also centers and normalizes the matrix
-# Inputs:
-#   skel_incomp -> incomplete skeletons matrix
-#   skel_comp -> complete skeletons matrix
-#   rank -> rank of matrix, can be higher or equal, the closest the better
-#   alfa -> error for which we consider that it has already converged to a satisfactory solution
-# Outputs:
-#   skel -> completed matrix
-#   missing_index -> index of missing values from original incomplete matrix
-#   it -> number of iterations done to acomplish result
+
 def fill_missing_alg(skel,OG_skel,r,alfa): #matrix completion algoritm
+    '''
+    Description:
+    This function performs a completion of the skeletons matrix using SVD
+    It also centers and normalizes the matrix
+    Inputs:
+    skel_incomp -> incomplete skeletons matrix
+    skel_comp -> complete skeletons matrix
+    rank -> rank of matrix, can be higher or equal, the closest the better
+    alfa -> error for which we consider that it has already converged to a satisfactory solution
+    Outputs:
+    skel -> completed matrix
+    missing_index -> index of missing values from original incomplete matrix
+    it -> number of iterations done to acomplish result
+    '''
+
     original_data=np.copy(skel)
     skel=np.delete(skel,[0,3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51,54],0) #we take off index and probabilities
     OG_skel=np.delete(OG_skel,[0,3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51,54],0) #we take off index and probabilities
@@ -334,15 +353,19 @@ def fill_missing_alg(skel,OG_skel,r,alfa): #matrix completion algoritm
     return skel,missing_index,it
 
 
-# Description:
-#   This function merges the features and skeleton matrices
-#   The skeleton selected for each frame is the one with the highest probability
-# Inputs:
-#   data -> features matrix
-#   skel -> skeleton matrix
-# Outputs:
-#   joint_matrix -> joint matrix
+
 def joint_matrix_gen(data,skel):
+    '''
+    Description:
+    This function merges the features and skeleton matrices
+    The skeleton selected for each frame is the one with the highest probability
+    Inputs:
+    data -> features matrix
+    skel -> skeleton matrix
+    Outputs:
+    joint_matrix -> joint matrix
+    '''
+
     vid_skel_ind = skel[0,:]
     joint_matrix = np.zeros((data.shape[0]+36, data.shape[1]))
 
