@@ -367,36 +367,37 @@ def joint_matrix_gen(data,skel):
     return joint_matrix
 
 
-# Print flags
+# Print flags (flag_check)
 print_plots = True # Print plots of the data
-print_frames = False # Print frames of the video
-save_flag = False # Save the frames in directory (needs print_frames = True)
+print_frames = True # Print frames of the video
+save_flag = True # Save the frames in directory (needs print_frames = True)
 skel_flag = True  # Print the skeleton on the frame (needs print_frames = True)
 subset_flag = True # Select a subset of frames
 
 # Frames to select
 frame_start = 1000
 frame_count = 300
+
 # Cumulative variance to select
 var = 0.85
 # Number of clusters to separate the data
 num_clusters = 6
-# Path to save frame images
+# Path to save frame images (path_check)
 path = 'C:/Users/Tiago/Desktop/Project_PBDat/frames'
 
-# Loading video
+# Loading video (path_check)
 vid = cv2.VideoCapture('data/girosmallveryslow2.mp4')
 n_frames = int(vid.get(cv2.CAP_PROP_FRAME_COUNT))
 
-# Loading skeletons incomplete
+# Loading skeletons incomplete (path_check)
 skel=scipy.io.loadmat('data/girosmallveryslow2_openpose.mat')
 skel=skel['skeldata']
 
-# Loading skeletons completed
+# Loading skeletons completed (path_check)
 skel_comp=scipy.io.loadmat('data/girosmallveryslow2_openpose_complete.mat')
 skel_comp=skel_comp['skeldata']
 
-# Loading embeddings
+# Loading embeddings (path_check)
 features = scipy.io.loadmat('data/girosmallveryslow2.mp4_features.mat')
 features = features['features'] 
 
@@ -406,6 +407,9 @@ if subset_flag:
 
     skel[:, (skel[0, :] >= frame_start) & (skel[0, :] < frame_start + frame_count)]
     skel_comp[:, (skel_comp[0, :] >= frame_start) & (skel_comp[0, :] < frame_start + frame_count)]
+else:
+    frame_count = features.shape[1]
+    frame_start = 0
 
 # Keep features along the columns
 features = features.T
@@ -421,9 +425,9 @@ print("This took ",it," iterations")
 skel_redu = PCA_reduction(skel_new, 10, 'Skeletons')
 
 # Clustering of the features
-labels, centroid = kmeans_clustering(skel_redu, num_clusters, 'Skeletons')
 skel_inliers, skel_in_idx, skel_outliers, skel_out_idx = outlier_detection(skel_redu, 'Skeletons')
 print('Number of Skeletons Outliers:', skel_out_idx.shape[0])
+labels, centroid = kmeans_clustering(skel_redu, num_clusters, 'Skeletons')
 
 #######################
 #  FEATURES ANALYSIS  #
@@ -451,9 +455,9 @@ plt.xlabel('Rank')
 features_redu = PCA_reduction(features, rank, 'Features')
 
 # Clustering of the features
-labels, centroid = kmeans_clustering(features_redu, num_clusters, 'Features')
 feat_inliers, feat_in_idx, feat_outliers, feat_out_idx = outlier_detection(features_redu, 'Features')
 print('Number of Features Outliers:', feat_out_idx.shape[0])
+labels, centroid = kmeans_clustering(features_redu, num_clusters, 'Features')
 
 #######################
 #  ALL DATA ANALYSIS  #
@@ -466,14 +470,14 @@ merged_matrix = joint_matrix_gen(features_redu,skel_redu)
 #merged_redu = PCA_reduction(merged_matrix, rank, 'Features + Skeletons')
 
 # Clustering of the merged matrix
-labels, centroid = kmeans_clustering(merged_matrix, num_clusters, 'Features + Skeletons')
 merged_inliers, merged_in_idx, merged_outliers, merged_out_idx = outlier_detection(merged_matrix, 'Features + Skeletons')
 print('Number of Merged Outliers:', merged_out_idx.shape[0])
+labels, centroid = kmeans_clustering(merged_matrix, num_clusters, 'Features + Skeletons')
 
 # Showing video
 if print_frames:
-    vid_skel_ind=skel[0,:]
-    #vid_skel_new=skel_new[0,:]
+    #vid_skel_ind=skel[0,:]
+    vid_skel_new=skel_new[0,:]
     for i in range(frame_count):
 
         # Read the frame
@@ -482,12 +486,12 @@ if print_frames:
         
         # Print the skeleton on the frame
         if skel_flag:
-            skel_frame=np.where(vid_skel_ind==i+frame_start-1)
-            #skel_new_frame=np.where(vid_skel_new==i+frame_start-1)
-            for j in skel_frame[0]:
-                print_skel(j ,skel,frame,frame.shape[1],frame.shape[0])
-            #for j in skel_new_frame[0]:
-            #    print_skel(j ,skel_new,frame,frame.shape[1],frame.shape[0])
+            #skel_frame=np.where(vid_skel_ind==i+frame_start-1)
+            #for j in skel_frame[0]:
+            #    print_skel(j ,skel,frame,frame.shape[1],frame.shape[0])
+            skel_new_frame=np.where(vid_skel_new==i+frame_start-1)
+            for j in skel_new_frame[0]:
+                print_skel(j ,skel_new,frame,frame.shape[1],frame.shape[0])
             
         # Set the text properties
         label_text = str(labels[i])
