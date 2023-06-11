@@ -15,13 +15,13 @@ import os
 def SVD_reduction(data_matrix, rank, print_plots):
     '''
     Description:
-    This function performs a Singular Value Decomposition (SVD) on the data matrix and reduces its dimensionality
+        This function performs a Singular Value Decomposition (SVD) on the data matrix and reduces its dimensionality
     Inputs:
-    data_matrix -> original data matrix
-    rank -> rank of the reduced matrix
-    print_plots -> show plot of singular values
+        data_matrix -> original data matrix
+        rank -> rank of the reduced matrix
+        print_plots -> show plot of singular values
     Outputs:
-    data_redu -> reduced data matrix
+        data_redu -> reduced data matrix
     '''
 
     # SVD
@@ -36,13 +36,13 @@ def SVD_reduction(data_matrix, rank, print_plots):
 def PCA_reduction(data_matrix, rank, print_plots):
     '''
     Description:
-    This function performs a Principal Component Analysis (PCA) on the data matrix and reduces its dimensionality
+        This function performs a Principal Component Analysis (PCA) on the data matrix and reduces its dimensionality
     Inputs:
-    data_matrix -> original data matrix
-    rank -> rank of the reduced matrix
-    print_plots -> show plot of explained variance
+        data_matrix -> original data matrix
+        rank -> rank of the reduced matrix
+        print_plots -> show plot of explained variance
     Outputs:
-    data_redu -> reduced data matrix
+        data_redu -> reduced data matrix
     '''
 
     # Center data
@@ -59,14 +59,14 @@ def PCA_reduction(data_matrix, rank, print_plots):
 def kmeans_clustering(data_matrix, n_cluster, print_plots):
     '''
     Description:
-    This function performs a Kmeans clustering on the data matrix
+        This function performs a Kmeans clustering on the data matrix
     Inputs:
-    data_matrix -> data matrix to cluster
-    n_cluster -> number of clusters to find
-    print_plots -> show plot of the clusters
+        data_matrix -> data matrix to cluster
+        n_cluster -> number of clusters to find
+        print_plots -> show plot of the clusters
     Outputs:
-    labels -> labels of the clusters
-    centroids -> centroids of the clusters
+        labels -> labels of the clusters
+        centroids -> centroids of the clusters
     '''
 
     #Kmeans
@@ -100,13 +100,13 @@ def kmeans_clustering(data_matrix, n_cluster, print_plots):
 def outlier_detection(data_matrix, print_plots):
     '''
     Description:
-    This function performs an outlier detection on the data matrix
+        This function performs an outlier detection on the data matrix
     Inputs:
-    data_matrix -> data matrix to find outliers
-    print_plots -> show plot of the outliers
+        data_matrix -> data matrix to find outliers
+        print_plots -> show plot of the outliers
     Outputs:
-    inliers -> inliers of the data matrix
-    outliers -> outliers of the data matrix
+        inliers -> inliers of the data matrix
+        outliers -> outliers of the data matrix
     '''
 
     # Z-score method
@@ -148,13 +148,13 @@ def outlier_detection(data_matrix, print_plots):
 def print_skel(i,skel_data,frame,width,height):
     '''
     Description:
-    This function draws the skeleton on the frame image, linking their joints in case of high probability
+        This function draws the skeleton on the frame image, linking their joints in case of high probability
     Inputs:
-    i -> frame number
-    skel_data -> skeleton coordinates and probabilities
-    frame -> frame image
-    width -> width of the frame
-    height -> height of the frame
+        i -> frame number
+        skel_data -> skeleton coordinates and probabilities
+        frame -> frame image
+        width -> width of the frame
+        height -> height of the frame
     '''
 
     val=4
@@ -215,12 +215,12 @@ def print_skel(i,skel_data,frame,width,height):
 def fill_missing(skel_data):
     '''
     Description:
-    This function fills the missing values of the data matrix with the mean
+        This function fills the missing values of the data matrix with the mean
     Inputs:
-    skel_data -> incomplete skeleton matrix
+        skel_data -> incomplete skeleton matrix
     Outputs:
-    mask_miss -> mask of missing values
-    n_missing -> number of missing values
+        mask_miss -> mask of missing values
+        n_missing -> number of missing values
     '''
 
     n_row=skel_data[:,0].shape
@@ -247,17 +247,17 @@ def fill_missing(skel_data):
 def fill_missing_alg(skel,OG_skel,r,alfa): #matrix completion algoritm
     '''
     Description:
-    This function performs a completion of the skeletons matrix using SVD
-    It also centers and normalizes the matrix
+        This function performs a completion of the skeletons matrix using SVD
+        It also centers and normalizes the matrix
     Inputs:
-    skel_incomp -> incomplete skeletons matrix
-    skel_comp -> complete skeletons matrix
-    rank -> rank of matrix, can be higher or equal, the closest the better
-    alfa -> error for which we consider that it has already converged to a satisfactory solution
+        skel_incomp -> incomplete skeletons matrix
+        skel_comp -> complete skeletons matrix
+        rank -> rank of matrix, can be higher or equal, the closest the better
+        alfa -> error for which we consider that it has already converged to a satisfactory solution
     Outputs:
-    skel -> completed matrix
-    missing_index -> index of missing values from original incomplete matrix
-    it -> number of iterations done to acomplish result
+        skel -> completed matrix
+        missing_index -> index of missing values from original incomplete matrix
+        it -> number of iterations done to acomplish result
     '''
 
     original_data=np.copy(skel)
@@ -357,13 +357,13 @@ def fill_missing_alg(skel,OG_skel,r,alfa): #matrix completion algoritm
 def joint_matrix_gen(data,skel):
     '''
     Description:
-    This function merges the features and skeleton matrices
-    The skeleton selected for each frame is the one with the highest probability
+        This function merges the features and skeleton matrices
+        The skeleton selected for each frame is the one with the highest probability
     Inputs:
-    data -> features matrix
-    skel -> skeleton matrix
+        data -> features matrix
+        skel -> skeleton matrix
     Outputs:
-    joint_matrix -> joint matrix
+        joint_matrix -> joint matrix
     '''
 
     vid_skel_ind = skel[0,:]
@@ -390,12 +390,15 @@ def joint_matrix_gen(data,skel):
     return joint_matrix
 
 
+##############################################################################################################
+
+
 # Print flags (flag_check)
 print_plots = True # Print plots of the data
 print_frames = True # Print frames of the video
 save_flag = True # Save the frames in directory (needs print_frames = True)
-skel_flag = True  # Print the skeleton on the frame (needs print_frames = True)
-subset_flag = True # Select a subset of frames
+skel_flag = False  # Print the skeleton on the frame (needs print_frames = True)
+subset_flag = False # Select a subset of frames
 
 # Frames to select
 frame_start = 1000
@@ -445,12 +448,15 @@ features = features.T
 skel_new,missing_index,it=fill_missing_alg(skel,skel_comp,4,0.001) 
 print("This took ",it," iterations")
 
+# Dimensionality reduction of the skeletons
 skel_redu = PCA_reduction(skel_new, 10, 'Skeletons')
 
-# Clustering of the features
+# Outlier detection of the skeletons
 skel_inliers, skel_in_idx, skel_outliers, skel_out_idx = outlier_detection(skel_redu, 'Skeletons')
 print('Number of Skeletons Outliers:', skel_out_idx.shape[0])
-labels, centroid = kmeans_clustering(skel_redu, num_clusters, 'Skeletons')
+
+# Clustering of the features
+labels, centroid = kmeans_clustering(skel_inliers, num_clusters, 'Skeletons')
 
 #######################
 #  FEATURES ANALYSIS  #
@@ -477,10 +483,12 @@ plt.xlabel('Rank')
 # Dimensionality reduction of the features
 features_redu = PCA_reduction(features, rank, 'Features')
 
-# Clustering of the features
+# Outlier detection of the features
 feat_inliers, feat_in_idx, feat_outliers, feat_out_idx = outlier_detection(features_redu, 'Features')
 print('Number of Features Outliers:', feat_out_idx.shape[0])
-labels, centroid = kmeans_clustering(features_redu, num_clusters, 'Features')
+
+# Clustering of the features
+labels, centroid = kmeans_clustering(feat_inliers, num_clusters, 'Features')
 
 #######################
 #  ALL DATA ANALYSIS  #
@@ -492,10 +500,12 @@ merged_matrix = joint_matrix_gen(features_redu,skel_redu)
 # Dimensionality reduction of the merged matrix
 #merged_redu = PCA_reduction(merged_matrix, rank, 'Features + Skeletons')
 
-# Clustering of the merged matrix
+# Outlier detection of the merged matrix
 merged_inliers, merged_in_idx, merged_outliers, merged_out_idx = outlier_detection(merged_matrix, 'Features + Skeletons')
 print('Number of Merged Outliers:', merged_out_idx.shape[0])
-labels, centroid = kmeans_clustering(merged_matrix, num_clusters, 'Features + Skeletons')
+
+# Clustering of the merged matrix
+labels, centroid = kmeans_clustering(merged_inliers, num_clusters, 'Features + Skeletons')
 
 # Showing video
 if print_frames:
