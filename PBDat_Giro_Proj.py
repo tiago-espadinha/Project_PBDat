@@ -398,11 +398,11 @@ print_plots = True # Print plots of the data
 print_frames = True # Print frames of the video
 save_flag = True # Save the frames in directory (needs print_frames = True)
 skel_flag = False  # Print the skeleton on the frame (needs print_frames = True)
-subset_flag = False # Select a subset of frames
+subset_flag = True # Select a subset of frames
 
 # Frames to select
 frame_start = 1000
-frame_count = 300
+frame_count = 1000
 
 # Cumulative variance to select
 var = 0.85
@@ -445,9 +445,9 @@ features = features.T
 #######################
 
 #Fill missing data
-skel_new,missing_index,it=fill_missing_alg(skel,skel_comp,4,0.001) 
-print("This took ",it," iterations")
-
+#skel_new,missing_index,it=fill_missing_alg(skel,skel_comp,4,0.001) 
+#print("This took ",it," iterations")
+skel_new=skel
 # Dimensionality reduction of the skeletons
 skel_redu = PCA_reduction(skel_new, 10, 'Skeletons')
 
@@ -511,6 +511,7 @@ labels, centroid = kmeans_clustering(merged_inliers, num_clusters, 'Features + S
 if print_frames:
     #vid_skel_ind=skel[0,:]
     vid_skel_new=skel_new[0,:]
+    k=0
     for i in range(frame_count):
 
         # Read the frame
@@ -525,9 +526,9 @@ if print_frames:
             skel_new_frame=np.where(vid_skel_new==i+frame_start-1)
             for j in skel_new_frame[0]:
                 print_skel(j ,skel_new,frame,frame.shape[1],frame.shape[0])
-            
         # Set the text properties
-        label_text = str(labels[i])
+        
+        label_text = str(labels[k])
         frame_text = str(frame_start + i)
         bottom_right_corner = (frame.shape[1] - 100, frame.shape[0] - 20)
         bottom_left_corner = (30, frame.shape[0] - 20)
@@ -538,18 +539,19 @@ if print_frames:
 
         # Add the frame and cluster number to the image
         cv2.putText(frame, frame_text, bottom_right_corner, font, font_scale, font_color, line_thickness)
-        if i in feat_out_idx:
+        if i in merged_out_idx:
             cv2.putText(frame, 'Outlier', bottom_left_corner , font, font_scale, font_color, line_thickness)
         else:
+            k+=1
             cv2.putText(frame, label_text, bottom_left_corner, font, font_scale, font_color, line_thickness)
 
         # Save the frame image in the path directory
         # The name of the image is the label of its cluster and its frame number
         if save_flag:
-            if i in feat_out_idx:
+            if i in merged_out_idx:
                 cv2.imwrite(os.path.join(path, 'Outlier_frame' + str(frame_start + i) + '.png'), frame)
             else:
-                cv2.imwrite(os.path.join(path, str(labels[i]) + '_frame' + str(frame_start + i) + '.png'), frame)
+                cv2.imwrite(os.path.join(path, str(labels[k-1]) + '_frame' + str(frame_start + i) + '.png'), frame)
         else:
             cv2.imshow('Video Frames', frame)
             if cv2.waitKey(0) == ord('q'):
