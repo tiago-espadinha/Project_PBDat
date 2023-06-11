@@ -144,18 +144,10 @@ def outlier_detection(data_matrix, print_plots):
 #   frame -> frame image
 #   width -> width of the frame
 #   height -> height of the frame
-def print_skel(i,skel_data,frame,width,height): #probably not done in the best way, i choose 0.35 experementaly
+def print_skel(i,skel_data,frame,width,height):
     val=4
     prob_val=0.20
-    '''joint_edges = np.array(((0,1), (1,2), (2,3), (3,4), (1,5), (5,6), (6,7), (1,8), (8,9), (9,10), (1,11), (11,12), (12,13), (0,14), (14,16), (0,15), (15,17)))
-    for j in range(joint_edges.shape[0]):
-        pos_1 = (skel_data[joint_edges[j, 0]*3+1, i], skel_data[joint_edges[j, 0]*3+2, i])
-        prob_1 = skel_data[joint_edges[j, 0]*3, i]
-        pos_2 = (skel_data[joint_edges[j, 1]*3+1, i], skel_data[joint_edges[j, 1]*3+2, i])
-        prob_2 = skel_data[joint_edges[j, 1]*3, i]
-        if prob_1 > prob_val and prob_2 > prob_val:
-            cv2.line(img=frame, pt1=(int(pos_1[0]*width),int(pos_1[1]*height)), pt2=(int(pos_2[0]*width),int(pos_2[1]*height)), color=(255, 0, 0), thickness=val , lineType=8, shift=0)
-    '''#0-1
+    #0-1
     if skel_data[6,i]>prob_val and skel_data[3,i]>prob_val:
         cv2.line(img=frame, pt1=(int(skel_data[1,i]*width),int(skel_data[2,i]*height)), pt2=(int(skel_data[4,i]*width),int(skel_data[5,i]*height)), color=(255, 0, 0), thickness=val , lineType=8, shift=0)
     #1-2
@@ -206,7 +198,6 @@ def print_skel(i,skel_data,frame,width,height): #probably not done in the best w
     #15-17
     if skel_data[54,i]>prob_val and skel_data[48,i]>prob_val:
         cv2.line(img=frame, pt1=(int(skel_data[46,i]*width),int(skel_data[47,i]*height)), pt2=(int(skel_data[52,i]*width),int(skel_data[53,i]*height)), color=(255, 0, 0), thickness=val , lineType=8, shift=0)
-    #'''
 
 
 # Description:
@@ -216,11 +207,25 @@ def print_skel(i,skel_data,frame,width,height): #probably not done in the best w
 # Outputs:
 #   mask_miss -> mask of missing values
 #   n_missing -> number of missing values
-
 def fill_missing(skel_data):
-    mask_miss = np.where(skel_data == 0, 1, 0)
-    n_missing = np.count_nonzero(mask_miss)
-    return mask_miss, n_missing
+    n_row=skel_data[:,0].shape
+    n_col=skel_data[0,:].shape
+    missing_index=np.zeros((n_row[0],n_col[0]))
+    for i in range(n_row[0]):
+        sum=0
+        n=0
+        for j in range(n_col[0]):
+            if skel_data[i,j]==0:
+                missing_index[i][j]=1
+            else:
+                sum+=skel_data[i,j]
+                n+=1
+        for j in range(n_col[0]):
+            if missing_index[i][j]==1:
+
+                if n!=0:
+                    skel_data[i,j]=0
+    return missing_index,n
 
 
 # Description:
@@ -235,13 +240,13 @@ def fill_missing(skel_data):
 #   skel -> completed matrix
 #   missing_index -> index of missing values from original incomplete matrix
 #   it -> number of iterations done to acomplish result
-def fill_missing_alg(skel,OG_skel,r,alfa):
+def fill_missing_alg(skel,OG_skel,r,alfa): #matrix completion algoritm
     original_data=np.copy(skel)
     skel=np.delete(skel,[0,3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51,54],0) #we take off index and probabilities
     OG_skel=np.delete(OG_skel,[0,3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51,54],0) #we take off index and probabilities
     missing_index,n=fill_missing(skel) #get missing indexes and fill in with something (can be mean, or just some random number)
     alfa=alfa/n
-    err_dif=math.inf
+    err_dif=10000000000000000000000000
     last_error=1000
     it=0
     old_skel=np.copy(skel)
@@ -340,7 +345,7 @@ def fill_missing_alg(skel,OG_skel,r,alfa):
 def joint_matrix_gen(data,skel):
     vid_skel_ind = skel[0,:]
     joint_matrix = np.zeros((data.shape[0]+36, data.shape[1]))
-    
+
     # find the skeleton with the highest probability for each frame
     for i in range(data.shape[1]):
         skel_frame = np.where(vid_skel_ind == i-1)
@@ -363,18 +368,19 @@ def joint_matrix_gen(data,skel):
 
 
 # Print flags
-print_plots = False
-print_frames = False
-subset_flag = True
-save_flag = True
-skel_flag = False
+print_plots = True # Print plots of the data
+print_frames = False # Print frames of the video
+save_flag = False # Save the frames in directory (needs print_frames = True)
+skel_flag = True  # Print the skeleton on the frame (needs print_frames = True)
+subset_flag = True # Select a subset of frames
 
 # Frames to select
 frame_start = 1000
 frame_count = 300
+# Cumulative variance to select
 var = 0.85
+# Number of clusters to separate the data
 num_clusters = 6
-
 # Path to save frame images
 path = 'C:/Users/Tiago/Desktop/Project_PBDat/frames'
 
@@ -409,10 +415,10 @@ features = features.T
 #######################
 
 #Fill missing data
-#skel_new,missing_index,it=fill_missing_alg(skel,skel_comp,4,0.001) 
-#print("This took ",it," iterations")
+skel_new,missing_index,it=fill_missing_alg(skel,skel_comp,4,0.001) 
+print("This took ",it," iterations")
 
-skel_redu = PCA_reduction(skel_comp, 15, 'Skeletons')
+skel_redu = PCA_reduction(skel_new, 10, 'Skeletons')
 
 # Clustering of the features
 labels, centroid = kmeans_clustering(skel_redu, num_clusters, 'Skeletons')
@@ -431,7 +437,7 @@ Variance_sum = np.cumsum(Variance) / np.sum(Variance)
 # Find rank of total variance > N%
 for i in range(len(Variance_sum)):
     if Variance_sum[i] > var:
-        rank = i
+        rank = i+1
         print('Features rank ( >', var, '):', rank)
         break
 
