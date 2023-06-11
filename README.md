@@ -53,11 +53,6 @@ To use the functions provided in this code, follow these steps:
         if you don't want to save the frames, change the flag 'save_flag' to False
         alternatively, a smaller number of frames can be analysed by changing the flag 'subset' to True, and tweaking the 'frame_start' and 'frame_count' variables
 
-
-
-    All the plots generated are saved in the `plots` folder
-        if you don't want to save the plots, change the flag 'save_plots' to False
-
     
 
 
