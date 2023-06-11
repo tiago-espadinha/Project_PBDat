@@ -398,7 +398,7 @@ print_plots = True # Print plots of the data
 print_frames = True # Print frames of the video
 save_flag = True # Save the frames in directory (needs print_frames = True)
 skel_flag = False  # Print the skeleton on the frame (needs print_frames = True)
-subset_flag = True # Select a subset of frames
+subset_flag = False # Select a subset of frames
 
 # Frames to select
 frame_start = 1000
