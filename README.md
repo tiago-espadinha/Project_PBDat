@@ -1,4 +1,8 @@
-# Project_PBDat
+# Project_PBDat_G14
+
+Manuel Palo, ist93120
+Daniel Paulo, ist96173
+Tiago Simoes, ist96329
 
 ## Code Description
 
@@ -38,7 +42,7 @@ To use the functions provided in this code, follow these steps:
     Check if all paths are correct 
         (search for 'path_check' to find any path used in the code)
 
-    The necessary data is provided in the `data` folder:
+    The necessary data should be added to the `data` folder:
         - 'girosmallveryslow2.mp4' is the video
         - 'girosmallveryslow2_openpose.mat' is the incomplete skeleton data
         - 'girosmallveryslow2_openpose_complete.mat' is the complete skeleton data
