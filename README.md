@@ -1,67 +1,82 @@
-# Project_PBDat_G14
+# PBDat Project G14
 
-Manuel Palo, ist93120
-Daniel Paulo, ist96173
-Tiago Simoes, ist96329
+## Team Members
 
-## !!Bug fixes!!
+- Manuel Palo, ist93120
+- Daniel Paulo, ist96173
+- Tiago Simões, ist96329
 
-Fixed outlier_detection() function to include a lower bound check (lines 122-123), minimal impact in the results.
+## Project Description
 
-## Code Description
+This repository contains code for analyzing data collected from a cycling tour. The analysis pipeline includes:
 
-The code provided in this repository is used to analyse the data collected from a cycling tour.
+1. **Skeleton Data Reconstruction**: Incomplete skeleton data is iteratively reconstructed by comparing it to complete skeleton data.
+2. **Dimensionality Reduction**: Both skeleton and features data undergo PCA processing to facilitate outlier detection and clustering.
+3. **Outlier Detection**: Identifies anomalous data points in both skeleton and features datasets.
+4. **Clustering**: Groups similar data patterns after outlier removal.
+5. **Feature Fusion**: Creates a new matrix by merging skeleton and features data.
+6. **Visualization**: Results are plotted and saved in the `plots` folder, with optional frame-by-frame visualization.
 
-The data used are the following:
+## Requirements
 
-    - Skeleton data of the cyclist
-    - Features data of the cyclist   
+- OpenCV (cv2)
+- matplotlib
+- numpy
+- pandas
+- scipy
+- scikit-learn (sklearn)
 
-The incomplete skeleton data is reconstructed iteratively comparing it to the complete skeleton data.
+### Data Requirements
 
-The reconstructed skeleton data goes through dimensionality reduction with PCA to facilitate the outlier detection and clustering that follow
+The following data files must be placed in the `data` directory:
 
-The features data also goes through dimensionality reduction with PCA to facilitate the outlier detection and clustering
+- `girosmallveryslow2.mp4` - Input video
+- `girosmallveryslow2_openpose.mat` - Incomplete skeleton data
+- `girosmallveryslow2_openpose_complete.mat` - Complete skeleton data
+- `girosmallveryslow2.mp4_features.mat` - Extracted features data
 
-The results of the outlier detection and clustering are plotted and saved in the `plots` folder
+## Installation
 
-A new matrix is created from merging the data from the skeleton and the features
+1. Install dependencies as specified above:
 
-This new matrix is once again filtered for outliers and clustered being this results plotted and saved on the frames themselves to facilitate the visualisation of the results
+```bash
+pip install opencv-python matplotlib numpy pandas scipy scikit-learn
+```
 
-## Dependencies
-The code requires the following dependencies:
-
-    - cv2 (OpenCV)
-    - matplotlib
-    - numpy
-    - pandas
-    - scipy
-    - sklearn
-    Please make sure to install these dependencies before running the code.
+2. Prepare data files as required
+3. Configure any necessary settings
 
 ## Usage
-To use the functions provided in this code, follow these steps:
 
-    Check if all paths are correct 
-        (search for 'path_check' to find any path used in the code)
+### Configuration
 
-    The necessary data should be added to the `data` folder:
-        - 'girosmallveryslow2.mp4' is the video
-        - 'girosmallveryslow2_openpose.mat' is the incomplete skeleton data
-        - 'girosmallveryslow2_openpose_complete.mat' is the complete skeleton data
-        - 'girosmallveryslow2.mp4_features.mat' is the features data
+- Search for `flag_check` in the code to find all configurable flags
 
-    Check flags and change them to the desired state 
-        (search for 'flag_check' to find all flags used in the code)
+### Running the Project
 
-    All the frames analysed are saved in the `frames` folder
-        Warning: analysing all the frames and saving them can take a long time and will take a lot of space 
-        (3.5GB approx.)
-        if you don't want to save the frames, change the flag 'save_flag' to False
-        alternatively, a smaller number of frames can be analysed by changing the flag 'subset' to True, and tweaking the 'frame_start' and 'frame_count' variables
+1. Place data files in the `data/` directory as specified above
+2. Set configuration flags in the script
+3. Execute the main script:
 
-    
+```bash
+python PBDat_Giro_Proj.py
+```
 
+### Optional Flags/Parameters
 
+- `save_flag`: Set to True to save analyzed frames (requires ~3.5GB storage), set to False to skip frame saving
+- `subset_flag`: Set to True with `frame_start` and `frame_count` to analyze a subset of frames
+- `print_plots`: Set to True to show plots of the data
+- `print_frames`: Set to True to show frames of the video
+- `skel_flag`: Set to True to print the skeleton on the frame (needs print_frames = True)
 
+## Outputs
+
+Describe what the project produces and where it is saved:
+
+- Plots saved in `plots/` directory
+- Analyzed frames saved in `frames/` directory (if `save_flag = True`)
+
+## Notes
+
+Search for `path_check` in the code to confirm all file paths are correct.
