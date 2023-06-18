@@ -4,6 +4,10 @@ Manuel Palo, ist93120
 Daniel Paulo, ist96173
 Tiago Simoes, ist96329
 
+## !!Bug fixes!!
+
+Fixed outlier_detection() function to include a lower bound check (lines 122-123), minimal impact in the results.
+
 ## Code Description
 
 The code provided in this repository is used to analyse the data collected from a cycling tour.

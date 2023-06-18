@@ -119,8 +119,8 @@ def outlier_detection(data_matrix, print_plots):
     iqr = q3 - q1
 
     # Detect outliers
-    outlier_idx = np.where(dist > q3 + 1.5*iqr)[0]
-    inlier_idx = np.where(dist <= q3 + 1.5*iqr)[0]
+    outlier_idx = np.where((dist > (q3 + (1.5*iqr))) | (dist < (q1 - (1.5*iqr))))[0]
+    inlier_idx = np.where((dist <= (q3 + (1.5*iqr))) & (dist >= (q1 - (1.5*iqr))))[0]
 
     # Remove outliers from data matrix
     inliers = np.delete(data_matrix, outlier_idx, axis=0)
